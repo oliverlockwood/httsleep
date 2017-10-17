@@ -40,6 +40,7 @@ class HttSleeper(object):
     :param ignore_exceptions: a list of exceptions to ignore when polling
                               the endpoint.
     :param loglevel: the loglevel to use. Defaults to `ERROR`.
+    :param kwargs: keyword args to pass to the Requests library
 
     ``url_or_request`` must be provided, along with at least one success condition (``until``).
 
@@ -50,7 +51,8 @@ class HttSleeper(object):
                  polling_interval=DEFAULT_POLLING_INTERVAL,
                  max_retries=DEFAULT_MAX_RETRIES,
                  ignore_exceptions=None,
-                 loglevel=logging.ERROR):
+                 loglevel=logging.ERROR,
+                 **kwargs):
         if status_code or json or jsonpath or text or callback:
             msg = ("The shorthand kwargs status_code, json, jsonpath, text"
                    " and callback are deprecated and will soon be removed.")
@@ -90,6 +92,7 @@ class HttSleeper(object):
         self.session = requests.Session()
         self.log = logging.getLogger()
         self.log.setLevel(loglevel)
+        self.kwargs = kwargs
 
     def _set_conditions(self, attribute, conditions):
         value = []
@@ -145,7 +148,7 @@ class HttSleeper(object):
         """
         while True:
             try:
-                response = self.session.send(self.request.prepare())
+                response = self.session.send(self.request.prepare(), **self.kwargs)
                 for condition in self.alarms:
                     if self.meets_condition(response, condition):
                         raise Alarm(response, condition)
